@@ -1,0 +1,6 @@
+framework module PodCalendar {
+  umbrella header "PodCalendar-umbrella.h"
+
+  export *
+  module * { export * }
+}

@@ -1,0 +1,16 @@
+PODS:
+  - PodCalendar (0.1.0)
+
+DEPENDENCIES:
+  - PodCalendar (from `../`)
+
+EXTERNAL SOURCES:
+  PodCalendar:
+    :path: "../"
+
+SPEC CHECKSUMS:
+  PodCalendar: b8a61d1ca910fca9c99eefb337a7cdc5c8213aa5
+
+PODFILE CHECKSUM: 1f5425ac57e0026424ef82bcc37622ad8fe922fe
+
+COCOAPODS: 1.6.1
