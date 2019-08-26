@@ -11,14 +11,19 @@ import UIKit
 public protocol CalendarDelegate: NSObjectProtocol {
     @objc optional func getLunarShortName( year : Int , month : Int , day : Int ) -> String?
     @objc optional func getLunarColor(shortName : String  ) -> UIColor?
+    @objc optional func getSolarColor(shortName : String  ) -> UIColor?
 }
 
 open class CalendarLayout: NSObject {
    
     /* WeekView背景颜色 */
     @objc public var weekViewBgColor: UIColor? = UIColor.white
+    @objc public var weekViewendColor: UIColor? = UIColor.white
+    @objc public var weekViewDayColor: UIColor? = UIColor.white
+    
+    
     @objc public var weekendColor: UIColor? = UIColor.red//周末字体颜色
-    @objc public var weekDayColor: UIColor? = UIColor.red//星期一到 星期字体颜色
+    @objc public var weekDayColor: UIColor? = UIColor.black//星期一到 星期字体颜色
    
     @objc public var didSelectItemBgColor : UIColor? = UIColor(red: 115/255, green: 201/255, blue: 188/255, alpha: 1)//选中背景颜色
     @objc public var didSelectItemTitleColor : UIColor? = UIColor.white //选中字体颜色
@@ -28,6 +33,6 @@ open class CalendarLayout: NSObject {
     @objc public var unSelectItemLunarTitleColor : UIColor? = UIColor.gray //未选中字体颜色
     @objc public var unSelectItemBgColor : UIColor? = UIColor.white //未选中背景颜色
     
-    weak var delegate : CalendarDelegate?
+    public weak var delegate : CalendarDelegate?
     
 }

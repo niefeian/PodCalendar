@@ -17,18 +17,28 @@ open class WeekView: UIView {
     }
     */
 
-    public var calendarLayout : CalendarLayout! = CalendarLayout()
+    public var calendarLayout : CalendarLayout! = CalendarLayout(){
+        didSet{
+            self.backgroundColor = calendarLayout.weekViewBgColor
+        }
+    }
     
     override  public  init(frame: CGRect) {
         super.init(frame: frame)
-        self.backgroundColor = UIColor(red: 115/255, green: 201/255, blue: 188/255, alpha: 1)
-        
+    }
+    
+    public  func loadUI(){
         let weekDays: [String] = ["日","一","二","三","四","五","六"]
         for (index,string) in weekDays.enumerated() {
             let dayLabel: UILabel = {
                 let label = UILabel()
                 label.text = string
-                label.textColor = UIColor.white
+                if index == 0 || index == 6 {
+                    label.textColor = calendarLayout.weekViewendColor
+                }else{
+                    label.textColor = calendarLayout.weekViewDayColor
+                }
+                label.font = UIFont.systemFont(ofSize: 14)
                 label.textAlignment = .center
                 return label
             }()

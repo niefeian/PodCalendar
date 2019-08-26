@@ -22,7 +22,13 @@ open class CalendarView: UICollectionView,UICollectionViewDelegate,UICollectionV
         self.isScrollEnabled = false
     }
     
-    public var getDatesBlock: ((UILabel)->())?
+    public class func initCalendarView(frame: CGRect, collectionViewLayout layout: UICollectionViewLayout , calendarLayout :  CalendarLayout) -> CalendarView{
+        let calendarView = CalendarView(frame: frame, collectionViewLayout: layout)
+        calendarView.calendarLayout = calendarLayout
+        return calendarView
+    }
+  
+    public var getDatesBlock: ((String)->())?
     
     public  var date: Date = Date() {
         didSet {
@@ -37,7 +43,7 @@ open class CalendarView: UICollectionView,UICollectionViewDelegate,UICollectionV
     private var month: Int = 0
     
     /// 指定日期的天数
-    public  var days: Int = 0 {
+    public var days: Int = 0 {
         didSet {
             self.tempDay = 1
             self.reloadData()
@@ -55,18 +61,27 @@ open class CalendarView: UICollectionView,UICollectionViewDelegate,UICollectionV
     
     public func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "cell", for: indexPath) as! CalendarCell
+        cell.dateView.backgroundColor = calendarLayout.unSelectItemBgColor
         if indexPath.row >= self.weekday && indexPath.row < self.weekday + self.days  {
             cell.dateLabel.text = "\(tempDay)"
-            let lunar = formatWithLunar(tempDay)
+            let lunar = formatWithLunar(tempDay, indexPath: indexPath)
             cell.lunarLabel.text = lunar.0
-            cell.lunarLabel.textColor = lunar.1
+            if  solarToLunar(day: tempDay) == solarToLunar(date: date){
+                cell.dateLabel.textColor = calendarLayout.didSelectItemTitleColor
+                cell.dateView.backgroundColor = calendarLayout.didSelectItemBgColor
+                cell.lunarLabel.textColor = calendarLayout.didSelectItemTitleColor
+                selectItemAt = indexPath
+            }else{
+                cell.dateView.backgroundColor = calendarLayout.unSelectItemBgColor
+                cell.lunarLabel.textColor = lunar.1
+                cell.dateLabel.textColor = lunar.2
+            }
             tempDay += 1
         }else {
             cell.dateLabel.text = ""
             cell.lunarLabel.text = ""
         }
-        cell.dateLabel.textColor = calendarLayout.unSelectItemTitleColor
-        cell.dateView.backgroundColor = calendarLayout.unSelectItemBgColor
+        
         return cell
     }
     required public init?(coder aDecoder: NSCoder) {
@@ -75,18 +90,21 @@ open class CalendarView: UICollectionView,UICollectionViewDelegate,UICollectionV
     
     public func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         let cell = collectionView.cellForItem(at: indexPath) as! CalendarCell
-        let dayLabel = cell.dateLabel
-        self.getDatesBlock?(dayLabel)
-        if selectItemAt != nil {
-            let cell2 = collectionView.cellForItem(at: selectItemAt!) as! CalendarCell
-            cell2.dateLabel.textColor = calendarLayout.unSelectItemTitleColor
-            cell2.dateView.backgroundColor = calendarLayout.unSelectItemBgColor
-            cell2.lunarLabel.textColor = calendarLayout.unSelectItemLunarTitleColor
+        if let text = cell.dateLabel.text ,  text != "" {
+            self.getDatesBlock?(text)
+            if selectItemAt != nil {
+                let cell2 = collectionView.cellForItem(at: selectItemAt!) as! CalendarCell
+                let lunar = formatWithLunar(Int(cell2.dateLabel.text ?? "1") ?? 1, indexPath: selectItemAt!)
+                cell2.dateView.backgroundColor = calendarLayout.unSelectItemBgColor
+                cell2.lunarLabel.textColor = lunar.1
+                cell2.dateLabel.textColor = lunar.2
+            }
+            
+            cell.dateLabel.textColor = calendarLayout.didSelectItemTitleColor
+            cell.dateView.backgroundColor = calendarLayout.didSelectItemBgColor
+            cell.lunarLabel.textColor = calendarLayout.didSelectItemTitleColor
+            selectItemAt = indexPath
         }
-        dayLabel.textColor = calendarLayout.didSelectItemTitleColor
-        cell.dateView.backgroundColor = calendarLayout.didSelectItemBgColor
-        cell.lunarLabel.textColor = calendarLayout.didSelectItemBgColor
-        selectItemAt = indexPath
     }
     
     /// 获取指定月份的天数
@@ -118,16 +136,23 @@ open class CalendarView: UICollectionView,UICollectionViewDelegate,UICollectionV
     var chineseMonths = ["正月", "二月", "三月", "四月", "五月", "六月", "七月", "八月",
                           "九月", "十月", "冬月", "腊月", nil]
     
-    func formatWithLunar(_  day: Int) -> (String,UIColor) {
+    func formatWithLunar(_  day: Int , indexPath: IndexPath) -> (String,UIColor,UIColor) {
         
-        if let name = calendarLayout.delegate?.getLunarShortName?(year: year, month: month, day: day){
-            return (name,calendarLayout.delegate?.getLunarColor?(shortName: name) ?? (calendarLayout.unSelectItemLunarTitleColor ?? UIColor.white))
+        if let name = calendarLayout.delegate?.getLunarShortName?(year: year, month: month, day: day) , name != "" {
+            return (name,calendarLayout.delegate?.getLunarColor?(shortName: name) ?? calendarLayout.unSelectItemLunarTitleColor!,calendarLayout.delegate?.getSolarColor?(shortName: name) ?? calendarLayout.unSelectItemTitleColor!)
         }
+        
         let string = solarToLunar(day: day)
+        
         if string.contains("初一"){
-         return  (string.components(separatedBy: "年").last?.replacingOccurrences(of: "初一", with: "") ?? "",UIColor.red)
+            return  (string.components(separatedBy: "年").last?.replacingOccurrences(of: "初一", with: "") ?? "",UIColor.red,calendarLayout.unSelectItemTitleColor!)
         }
-        return (string.components(separatedBy: "月").last ?? "" , calendarLayout.unSelectItemLunarTitleColor ?? UIColor.white)
+        
+        if indexPath.row % 7 == 0 || indexPath.row % 7 == 6 {
+            return (string.components(separatedBy: "月").last ?? "" , calendarLayout.unSelectItemLunarTitleColor!,calendarLayout.weekendColor!)
+        }
+        
+        return (string.components(separatedBy: "月").last ?? "" , calendarLayout.unSelectItemLunarTitleColor!,calendarLayout.unSelectItemTitleColor!)
     }
   
     
@@ -162,5 +187,19 @@ open class CalendarView: UICollectionView,UICollectionViewDelegate,UICollectionV
         formatter.dateStyle = .medium
         formatter.calendar = lunarCalendar
         return formatter.string(from: solarDate!)
+    }
+    
+    func solarToLunar( date: Date) -> String {
+//   
+//        let solarDate = solarCalendar.date(from: date)
+//        
+        //初始化农历日历
+        let lunarCalendar = Calendar.init(identifier: .chinese)
+        //日期格式和输出
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "zh_CN")
+        formatter.dateStyle = .medium
+        formatter.calendar = lunarCalendar
+        return formatter.string(from: date)
     }
 }
